@@ -20,7 +20,7 @@ class GameGrid:
     def __init__(self, grid_size=(9, 9)):
         self.x_dim = grid_size[0]
         self.y_dim = grid_size[1]
-        self.food = None
+        self.food = []
         self.snake = None
         grid_list = []
 
