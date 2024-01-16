@@ -1,6 +1,7 @@
-
 import os
+
 import pygame
+
 from user_interface import UserInterface
 
 os.environ['SDL_VIDEO_CENTERED'] = '1'

@@ -35,7 +35,7 @@ class Snake:
 
         # Wall collision logic
         if head_x < 0 or head_y < 0 or head_x >= self.grid_size[0] or head_y >= self.grid_size[1]:
-            sys.exit('Snake hit a wall')
+            sys.exit(f'Snake hit a wall. Score: {len(self.snake_body())}')
 
         self.snake.insert_at_beginning(next_head)
 
@@ -48,4 +48,4 @@ class Snake:
 
         # Self-collision check
         if next_head in self.snake_body()[1:]:
-            sys.exit('Tried to eat own body')
+            sys.exit(f'Tried to eat own body. Score: {len(self.snake_body())}')
