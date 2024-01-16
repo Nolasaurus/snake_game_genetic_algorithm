@@ -1,4 +1,6 @@
+import math
 import pygame
+
 from snake import Snake
 from game_grid import GameGrid
 
@@ -15,16 +17,18 @@ class UserInterface():
         self.clock = pygame.time.Clock()
         self.game_grid = GameGrid(grid_size)
         self.snake = Snake(grid_size)
+        self.game_grid.update_snake(self.snake)
+        self.game_grid.spawn_food()
         self.running = True
 
         grid_dict = {}
         # name the grid cells and store their respective  (0,0)
-        cell_size_x = window_height // grid_size[0]
-        cell_size_y = window_width // grid_size[1]
+        self.cell_size_x = window_height // grid_size[0]
+        self.cell_size_y = window_width // grid_size[1]
 
         for x_num in range(grid_size[0]):
             for y_num in range(grid_size[1]):
-                grid_dict[(x_num, y_num)] = (x_num * cell_size_x, y_num * cell_size_y)
+                grid_dict[(x_num, y_num)] = (x_num * self.cell_size_x, y_num * self.cell_size_y)
 
         self.grid_to_pixel_dict = grid_dict.copy()
 
@@ -53,29 +57,16 @@ class UserInterface():
                     self.snake.head_direction = 'UP'
 
     def render(self):
-        self.window.fill((0,0,0))
-
         '''
         Calculates each gridsquare's (0,0) top-left corner and stores in dict. 
         Key: nickname (x,y), e.g. (3,2) for the 3rd col, 2nd row.
         Value: "(0, 0)" for gridsquare
         '''        
-
-
+        self.window.fill((0,0,0))
+        unitsTexture = pygame.image.load("units.png")
         
         # Draw snake
         snake = self.snake.snake_body()
-
-        # snake_head = snake[0]
-        # snake_body = snake[1:]
-
-        # # Draw head
-
-        # head_x, head_y = self.grid_to_pixel_dict[snake_head]
-        unitsTexture = pygame.image.load("units.png")
-        # head_location = pygame.Vector2(head_x, head_y) # where in the scene
-        # rectangle = pygame.Rect(192, 0, 64, 64) # where in the units.png
-        # self.window.blit(unitsTexture,head_location,rectangle)
 
         # Draw body
         for body_piece in snake:
@@ -83,7 +74,13 @@ class UserInterface():
             location = pygame.Vector2(body_x, body_y) # where in the scene
             rectangle = pygame.Rect(0, 64 , 64, 64) # where in the units.png
             self.window.blit(unitsTexture,location,rectangle)
-        
+
+        for food_piece in self.game_grid.food:
+            food_x, food_y = self.grid_to_pixel_dict[food_piece]
+            location = pygame.Vector2(food_x, food_y) # where in the scene
+            rectangle = pygame.Rect(320, 64, 64, 64) # where in the units.png
+            self.window.blit(unitsTexture,location,rectangle)
+
         pygame.display.update()
 
 

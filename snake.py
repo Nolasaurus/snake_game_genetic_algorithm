@@ -41,14 +41,7 @@ class Snake:
             sys.exit('Snake hit a wall')
 
         self.snake.insert_at_beginning(next_head)
-
-        # for collision
-        #if food_collision:
-        #    pass
-        # elif wall_collision:
-        #   pygame.endgame
-        # else:
-        #       remove last node
-        if game_grid_object.food is None or next_head not in game_grid_object.food:
+        if (head_x, head_y) in game_grid_object.food:
+            pass
+        else:
             self.snake.remove_last_node()
-

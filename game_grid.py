@@ -3,7 +3,7 @@ from snake import Snake
 
 
 def main():
-    grid_size = (9, 9)
+    grid_size = (16, 16)
     game_grid = GameGrid(grid_size)
     snake = Snake(grid_size)
     game_grid.update_snake(snake)
@@ -35,13 +35,13 @@ class GameGrid:
 
     def spawn_food(self):
         list_of_snake_cell_locations = self.snake.snake_body()
-        food_locations = random.choice(
+        food_locations = [random.choice(
             [
                 xy_coord
                 for xy_coord in self.grid
                 if xy_coord not in list_of_snake_cell_locations
             ]
-        )
+        )]
         self.food = food_locations
 
         return food_locations
