@@ -59,7 +59,7 @@ class GameGrid:
                 cell = (x_num, y_num)
                 if cell in snake_body:
                     print(f"{BRIGHT_YELLOW}X{RESET}", end=" ")
-                elif cell == self.food:
+                elif cell in self.food:
                     print(f"{RED}F{RESET}", end=" ")
                 else:
                     print(f"{BLACK}O{RESET}", end=" ")
