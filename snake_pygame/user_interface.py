@@ -62,7 +62,7 @@ class UserInterface():
         Value: "(0, 0)" for gridsquare
         '''        
         self.window.fill((0,0,0))
-        unitsTexture = pygame.image.load("units.png")
+        unitsTexture = pygame.image.load("snake_pygame/units.png")
         
         # Draw snake
         snake = self.snake.snake_body()
