@@ -11,6 +11,7 @@ class UserInterface():
         window_width = kwargs.get('window_width', 640)  # Default width
         window_height = kwargs.get('window_height', 640)  # Default height
         grid_size = kwargs.get('grid_size', (9, 9))  # Default grid size
+        self.game_tick = kwargs.get('game_tick', 6) # Default game speed
 
         self.window = pygame.display.set_mode((window_width, window_height))
         self.clock = pygame.time.Clock()
@@ -31,6 +32,11 @@ class UserInterface():
 
         self.grid_to_pixel_dict = grid_dict.copy()
 
+    def set_snake_direction(self, direction):
+        '''
+        Allow setting snake direction from outside class
+        '''
+        self.snake.head_direction = direction
 
     def processInput(self):
         '''
@@ -89,4 +95,4 @@ class UserInterface():
             self.game_grid.update_snake(self.snake)
             self.snake.move(self.game_grid)
             self.render()
-            self.clock.tick(6)
+            self.clock.tick(self.game_tick)
