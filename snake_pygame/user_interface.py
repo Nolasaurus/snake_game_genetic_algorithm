@@ -4,6 +4,7 @@ import pygame
 from snake import Snake
 from game_grid import GameGrid
 
+
 class GameOverException(Exception):
     pass
 
@@ -14,12 +15,19 @@ class UserInterface():
             pygame.init()
 
         # Extract arguments from kwargs with default values
-        window_width = kwargs.get('window_width', 640)  # Default width
-        window_height = kwargs.get('window_height', 640)  # Default height
+        self.headless = kwargs.get('run_headless', False)
+        if self.headless:
+            pass
+        else:
+            window_width = kwargs.get('window_width', 640)  # Default width
+            window_height = kwargs.get('window_height', 640)  # Default height
+            self.window = pygame.display.set_mode((window_width, window_height))
+
         self.grid_size = kwargs.get('grid_size', (9, 9))  # Default grid size
         self.game_tick = kwargs.get('game_tick', 6) # Default game speed
-        
-        self.window = pygame.display.set_mode((window_width, window_height))
+
+
+
         self.clock = pygame.time.Clock()
         self.game_grid = GameGrid(self.grid_size)
         self.snake = Snake(self.grid_size)
@@ -28,15 +36,17 @@ class UserInterface():
         self.running = True
 
         grid_dict = {}
-        # name the grid cells and store their respective  (0,0)
-        self.cell_size_x = window_height // self.grid_size[0]
-        self.cell_size_y = window_width // self.grid_size[1]
+        
+        if not self.headless:
+            # name the grid cells and store their respective  (0,0)
+            self.cell_size_x = window_height // self.grid_size[0]
+            self.cell_size_y = window_width // self.grid_size[1]
 
-        for x_num in range(self.grid_size[0]):
-            for y_num in range(self.grid_size[1]):
-                grid_dict[(x_num, y_num)] = (x_num * self.cell_size_x, y_num * self.cell_size_y)
+            for x_num in range(self.grid_size[0]):
+                for y_num in range(self.grid_size[1]):
+                    grid_dict[(x_num, y_num)] = (x_num * self.cell_size_x, y_num * self.cell_size_y)
 
-        self.grid_to_pixel_dict = grid_dict.copy()
+            self.grid_to_pixel_dict = grid_dict.copy()
 
     def set_snake_direction(self, direction):
         '''
@@ -112,7 +122,10 @@ class UserInterface():
                 self.snake.move(self.game_grid)
                 if self.snake_in_wall_or_body():
                     raise GameOverException
-                self.render()
+                if self.headless:
+                    pass
+                else:
+                    self.render()
                 self.clock.tick(self.game_tick)
         except KeyError as e:
             print(f'Error: {e}')

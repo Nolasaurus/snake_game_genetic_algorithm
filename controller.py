@@ -12,25 +12,25 @@ class GameOverException(Exception):
     pass
 
 def main():
-    GAME_TICK = 60
+    GAME_TICK = 3600
     WINDOW_HEIGHT = 800
     WINDOW_WIDTH = 800
     GRID_SIZE = (8, 8)
+    RUN_HEADLESS = True
 
     for _ in range(5):
         if not pygame.get_init():
             pygame.init()
 
-        controller = GameController(GRID_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH, GAME_TICK)
+        controller = GameController(GRID_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH, GAME_TICK, RUN_HEADLESS)
         controller.play_game()
-        controller.game.game_grid.print_grid()
 
     pygame.quit()
 
 class GameController:
-    def __init__(self, grid_size, window_height, window_width,game_tick):
+    def __init__(self, grid_size, window_height, window_width,game_tick, run_headless):
         # Instantiate the game's user interface
-        self.game = UserInterface(grid_size=grid_size, window_height=window_height, window_width=window_width, game_tick=game_tick)
+        self.game = UserInterface(grid_size=grid_size, window_height=window_height, window_width=window_width, game_tick=game_tick, run_headless=run_headless)
 
 
     def start_game(self):
@@ -51,7 +51,9 @@ class GameController:
                 self.game.snake.move(self.game.game_grid)
                 if self.game.snake_in_wall_or_body():
                     raise GameOverException
-                self.game.render()
+                if not self.game.headless:
+                    self.game.render()
+
                 self.game.clock.tick(self.game.game_tick)
                 
         except GameOverException:
