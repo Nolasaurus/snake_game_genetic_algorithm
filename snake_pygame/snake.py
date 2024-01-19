@@ -1,4 +1,4 @@
-import sys
+import pygame
 from linkedlist import LinkedList
 
 class Snake:
@@ -17,6 +17,9 @@ class Snake:
 
     def snake_body(self):
         return self.snake.to_list()
+    
+    def snake_length(self):
+        return len(self.snake_body())
 
     def move(self, game_grid_object):
         head_x, head_y = self.snake_body()[0]
@@ -32,11 +35,6 @@ class Snake:
             head_x += 1
 
         next_head = (head_x, head_y)
-
-        # Wall collision logic
-        if head_x < 0 or head_y < 0 or head_x >= self.grid_size[0] or head_y >= self.grid_size[1]:
-            sys.exit(f'Snake hit a wall. Score: {len(self.snake_body())}')
-
         self.snake.insert_at_beginning(next_head)
 
         # Check if the snake ate food
@@ -45,7 +43,3 @@ class Snake:
             game_grid_object.spawn_food()
         else:
             self.snake.remove_last_node()
-
-        # Self-collision check
-        if next_head in self.snake_body()[1:]:
-            sys.exit(f'Tried to eat own body. Score: {len(self.snake_body())}')

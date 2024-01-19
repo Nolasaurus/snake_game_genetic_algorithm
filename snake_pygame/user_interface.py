@@ -1,33 +1,39 @@
+import time
 import pygame
 
 from snake import Snake
 from game_grid import GameGrid
 
+class GameOverException(Exception):
+    pass
+
 class UserInterface():
     def __init__(self, **kwargs):
-        pygame.init()
+        
+        if not pygame.get_init():
+            pygame.init()
 
         # Extract arguments from kwargs with default values
         window_width = kwargs.get('window_width', 640)  # Default width
         window_height = kwargs.get('window_height', 640)  # Default height
-        grid_size = kwargs.get('grid_size', (9, 9))  # Default grid size
+        self.grid_size = kwargs.get('grid_size', (9, 9))  # Default grid size
         self.game_tick = kwargs.get('game_tick', 6) # Default game speed
-
+        
         self.window = pygame.display.set_mode((window_width, window_height))
         self.clock = pygame.time.Clock()
-        self.game_grid = GameGrid(grid_size)
-        self.snake = Snake(grid_size)
+        self.game_grid = GameGrid(self.grid_size)
+        self.snake = Snake(self.grid_size)
         self.game_grid.update_snake(self.snake)
         self.game_grid.spawn_food()
         self.running = True
 
         grid_dict = {}
         # name the grid cells and store their respective  (0,0)
-        self.cell_size_x = window_height // grid_size[0]
-        self.cell_size_y = window_width // grid_size[1]
+        self.cell_size_x = window_height // self.grid_size[0]
+        self.cell_size_y = window_width // self.grid_size[1]
 
-        for x_num in range(grid_size[0]):
-            for y_num in range(grid_size[1]):
+        for x_num in range(self.grid_size[0]):
+            for y_num in range(self.grid_size[1]):
                 grid_dict[(x_num, y_num)] = (x_num * self.cell_size_x, y_num * self.cell_size_y)
 
         self.grid_to_pixel_dict = grid_dict.copy()
@@ -37,6 +43,14 @@ class UserInterface():
         Allow setting snake direction from outside class
         '''
         self.snake.head_direction = direction
+
+    def snake_in_wall_or_body(self):
+        snek = self.snake.snake_body()
+        head_x, head_y = snek[0]
+
+        has_wall_collision  = head_x < 0 or head_y < 0 or head_x > self.game_grid.x_dim-1 or head_y > self.game_grid.y_dim-1
+        has_body_collision  = (head_x, head_y) in snek[1:]
+        return has_wall_collision or has_body_collision
 
     def processInput(self):
         '''
@@ -90,9 +104,36 @@ class UserInterface():
 
 
     def run(self):
-        while self.running:
-            self.processInput()
-            self.game_grid.update_snake(self.snake)
-            self.snake.move(self.game_grid)
-            self.render()
-            self.clock.tick(self.game_tick)
+        try:
+            game_start = time.time_ns()  # Start timing
+            while self.running:
+                self.processInput()
+                self.game_grid.update_snake(self.snake)
+                self.snake.move(self.game_grid)
+                if self.snake_in_wall_or_body():
+                    raise GameOverException
+                self.render()
+                self.clock.tick(self.game_tick)
+        except KeyError as e:
+            print(f'Error: {e}')
+
+        except GameOverException:
+            game_end = time.time_ns()  # End timing
+            runtime = game_end - game_start
+            runtime_ms = runtime / 1e6  # Convert nanoseconds to ms
+
+            # Assuming snake_length is a property or method of the Snake class
+            snake_length = len(self.snake.snake_body())
+
+            game_record = {
+                'game_tick': self.game_tick,
+                'snake_length': snake_length,
+                'snake_body': self.snake.snake_body(),
+                'grid_size': (self.game_grid.x_dim, self.game_grid.y_dim),
+                'runtime_seconds': runtime_ms
+            }
+
+            print("Game Record:", game_record)
+
+        except Exception as e:
+            print(f'Error: {e}')

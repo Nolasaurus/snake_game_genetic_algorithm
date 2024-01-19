@@ -1,87 +1,122 @@
 import os
 import sys
 import random
+import pygame
 
 # Adjust the path if snake_pygame is in a different directory
 sys.path.append(os.path.join(os.path.dirname(__file__), 'snake_pygame'))
 
 from user_interface import UserInterface  # Import the UserInterface class
 
-
+class GameOverException(Exception):
+    pass
 
 def main():
     GAME_TICK = 60
     WINDOW_HEIGHT = 800
     WINDOW_WIDTH = 800
-    GRID_SIZE = (16, 16)
+    GRID_SIZE = (8, 8)
 
-    controller = GameController(GRID_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH, GAME_TICK)
-    controller.play_game()  # This now controls the game loop
+    for _ in range(5):
+        if not pygame.get_init():
+            pygame.init()
+
+        controller = GameController(GRID_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH, GAME_TICK)
+        controller.play_game()
+        controller.game.game_grid.print_grid()
+
+    pygame.quit()
 
 class GameController:
     def __init__(self, grid_size, window_height, window_width,game_tick):
         # Instantiate the game's user interface
-        self.user_interface = UserInterface(grid_size=grid_size, window_height=window_height, window_width=window_width, game_tick=game_tick)
+        self.game = UserInterface(grid_size=grid_size, window_height=window_height, window_width=window_width, game_tick=game_tick)
 
 
     def start_game(self):
         # Start the game loop
-        self.user_interface.run()
+        self.game.run()
 
 
     def play_game(self):
-        while self.user_interface.running:
-            # Choose a new head direction at each tick
-            new_direction = self.choose_direction()
+        try:
+            while self.game.running:
+                # Choose a new head direction at each tick
+                new_direction = self.choose_direction()
+                self.game.set_snake_direction(new_direction)
 
-            self.user_interface.set_snake_direction(new_direction)
+                # Update the game state and render
+                self.game.processInput()
+                self.game.game_grid.update_snake(self.game.snake)
+                self.game.snake.move(self.game.game_grid)
+                if self.game.snake_in_wall_or_body():
+                    raise GameOverException
+                self.game.render()
+                self.game.clock.tick(self.game.game_tick)
+                
+        except GameOverException:
+            snek = self.game.snake.snake_body()
+            snake_length = len(self.game.snake.snake_body())
 
-            # Update the game state and render
-            self.user_interface.processInput()
-            self.user_interface.game_grid.update_snake(self.user_interface.snake)
-            self.user_interface.snake.move(self.user_interface.game_grid)
-            self.user_interface.render()
-            self.user_interface.clock.tick(self.user_interface.game_tick)
+            game_record = {
+                'snake_length': snake_length,
+                'snake_body': snek,
+                'grid_size': (self.game.game_grid.x_dim, self.game.game_grid.y_dim),
+                'runtime_milliseconds': pygame.time.get_ticks()
+            }
+
+            print("Game Record:", game_record)
+            pygame.quit()
 
     def choose_direction(self):
-        valid_head_directions = {'RIGHT', 'DOWN', 'LEFT', 'UP'}  # Use a set for easier removal
-        snake_body = self.user_interface.snake.snake_body()
-        first_seg, second_seg = snake_body[0], snake_body[1]
-
-        delta_x = second_seg[0] - first_seg[0]
-        delta_y = second_seg[1] - first_seg[1]
+        snake_body = self.game.snake.snake_body()
+        first_seg = snake_body[0]
+        second_seg = snake_body[1]
+        x_dim, y_dim = self.game.game_grid.x_dim, self.game.game_grid.y_dim
+        head_x = first_seg[0]
+        head_y = first_seg[1]
+        delta_x = head_x - second_seg[0]
+        delta_y = head_y - second_seg[1]
 
         # Determine the invalid direction based on current movement
+        body_directions = []
         if delta_x == 0:  # Vertical movement
             if delta_y > 0:  # Moving down
-                invalid_direction = 'DOWN'
+                body_directions.append('UP')
             else:  # Moving up
-                invalid_direction = 'UP'
+                body_directions.append('DOWN')
         else:  # Horizontal movement
             if delta_x > 0:  # Moving right
-                invalid_direction = 'RIGHT'
+                body_directions.append('LEFT')
             else:  # Moving left
-                invalid_direction = 'LEFT'
+                body_directions.append('RIGHT')
 
-        # Remove the invalid direction
-        valid_head_directions.remove(invalid_direction)
+        # Determine invalid directions based on other body segs
+        if (head_x + 1, head_y) in snake_body:
+            body_directions.append('RIGHT')
+        if (head_x - 1, head_y) in snake_body:
+            body_directions.append('LEFT')
+        if (head_x, head_y + 1) in snake_body:
+            body_directions.append('DOWN')
+        if (head_x, head_y - 1) in snake_body:
+            body_directions.append('UP')
 
-        # Wall Logic
         # Remove directions that would hit a wall
-        x_dim = self.user_interface.game_grid.x_dim
-        y_dim = self.user_interface.game_grid.y_dim
+        wall_directions = []
         if first_seg[0] == 0:  # Leftmost column
-            valid_head_directions.discard('LEFT')
+            wall_directions.append('LEFT')
         if first_seg[0] == x_dim - 1:  # Rightmost column
-            valid_head_directions.discard('RIGHT')
+            wall_directions.append('RIGHT')
         if first_seg[1] == 0:  # Top row
-            valid_head_directions.discard('UP')
+            wall_directions.append('UP')
         if first_seg[1] == y_dim - 1:  # Bottom row
-            valid_head_directions.discard('DOWN')
-        # Return a random valid direction
-        return random.choice(list(valid_head_directions))
+            wall_directions.append('DOWN')
 
+        valid_head_directions = ['LEFT', 'RIGHT', 'UP', 'DOWN']
+        invalid_dirs = set(wall_directions + body_directions)
+        valid_head_directions = [dir for dir in valid_head_directions if dir not in invalid_dirs]
+
+        return random.choice(valid_head_directions) if valid_head_directions else 'DOWN'
 
 if __name__ == '__main__':
     main()
-    
