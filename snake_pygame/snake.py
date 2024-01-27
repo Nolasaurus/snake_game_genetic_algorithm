@@ -1,5 +1,5 @@
 import pygame
-from linkedlist import LinkedList
+from .linkedlist import LinkedList
 
 class Snake:
     def __init__(self, grid_size):
@@ -8,7 +8,7 @@ class Snake:
         x_mid = grid_size[0] // 2
         y_mid = grid_size[1] // 2
 
-        self.head_direction = 'DOWN'
+        self.head_direction = int(180)
         self.snake = LinkedList()
 
         # Add initial snake segments; top-left of screen is x=0, y=0
@@ -26,13 +26,13 @@ class Snake:
         head_x, head_y = self.snake_body()[0]
 
         # Movement logic
-        if self.head_direction == 'UP':
+        if self.head_direction == int(0):
             head_y -= 1
-        elif self.head_direction == 'DOWN':
+        elif self.head_direction == int(180):
             head_y += 1
-        elif self.head_direction == 'LEFT':
+        elif self.head_direction == int(270):
             head_x -= 1
-        elif self.head_direction == 'RIGHT':
+        elif self.head_direction == int(90):
             head_x += 1
 
         next_head = (head_x, head_y)

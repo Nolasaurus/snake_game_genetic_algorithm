@@ -1,5 +1,5 @@
 import random
-from snake import Snake
+from .snake import Snake
 
 
 def main():
@@ -35,6 +35,8 @@ class GameGrid:
 
     def spawn_food(self):
         list_of_snake_cell_locations = self.snake.snake_body()
+        # choose a random location for the next food
+        # from a list of all squares not in the snake
         food_locations = [random.choice(
             [
                 xy_coord

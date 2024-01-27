@@ -1,8 +1,8 @@
 import time
 import pygame
 
-from snake import Snake
-from game_grid import GameGrid
+from .snake import Snake
+from .game_grid import GameGrid
 
 
 class GameOverException(Exception):
@@ -77,13 +77,13 @@ class UserInterface():
                     self.running = False
                     break
                 elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                    self.snake.head_direction = 'RIGHT'
+                    self.snake.head_direction = int(90)
                 elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                    self.snake.head_direction = 'LEFT'
+                    self.snake.head_direction = int(270)
                 elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                    self.snake.head_direction = 'DOWN'
+                    self.snake.head_direction = int(180)
                 elif event.key == pygame.K_UP or event.key == pygame.K_w:
-                    self.snake.head_direction = 'UP'
+                    self.snake.head_direction = int(0)
 
     def render(self):
         '''

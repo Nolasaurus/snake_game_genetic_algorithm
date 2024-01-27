@@ -1,14 +1,17 @@
 import os
 import sys
-import random
 import time
 import pygame
 import pandas as pd
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from snake_pygame.user_interface import UserInterface, GameOverException  # Import the UserInterface class
 
 # Adjust the path if snake_pygame is in a different directory
 sys.path.append(os.path.join(os.path.dirname(__file__), 'snake_pygame'))
 
-from user_interface import UserInterface, GameOverException  # Import the UserInterface class
+
 
 def main():
     GAME_TICK = 3600
@@ -23,6 +26,21 @@ def main():
     tester.print_table()
 
     pygame.quit()
+
+
+class SnakeNN(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super(SnakeNN, self).__init__()
+
+        self.fc1 = nn.Linear(input_size, 64)
+        self.fc2 = nn.Linear(64, 32)
+        self.fc3 = nn.Linear(32, output_size)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        x = self.fc3(x)
+        return x
 
 class GameController:
     def __init__(self, grid_size, window_height, window_width,game_tick, run_headless):
@@ -69,58 +87,41 @@ class GameController:
             }
 
             return game_record
+        
+
 
     def choose_direction(self):
+        # game state inputs
+        last_head_direction = self.game.snake.head_direction
         snake_body = self.game.snake.snake_body()
-        first_seg = snake_body[0]
-        second_seg = snake_body[1]
-        x_dim, y_dim = self.game.game_grid.x_dim, self.game.game_grid.y_dim
-        head_x = first_seg[0]
-        head_y = first_seg[1]
-        delta_x = head_x - second_seg[0]
-        delta_y = head_y - second_seg[1]
+        food_locations = self.game.game_grid.food
+        grid_size = self.game.grid_size
+        game_state = torch.zeros(grid_size)
 
-        # Determine the invalid direction based on current movement
-        body_directions = []
-        if delta_x == 0:  # Vertical movement
-            if delta_y > 0:  # Moving down
-                body_directions.append('UP')
-            else:  # Moving up
-                body_directions.append('DOWN')
-        else:  # Horizontal movement
-            if delta_x > 0:  # Moving right
-                body_directions.append('LEFT')
-            else:  # Moving left
-                body_directions.append('RIGHT')
+        # Mark food locations in the game state
+        for food in food_locations:
+            game_state[food[0], food[1]] = 1
 
-        # Determine invalid directions based on other body segs
-        if (head_x + 1, head_y) in snake_body:
-            body_directions.append('RIGHT')
-        if (head_x - 1, head_y) in snake_body:
-            body_directions.append('LEFT')
-        if (head_x, head_y + 1) in snake_body:
-            body_directions.append('DOWN')
-        if (head_x, head_y - 1) in snake_body:
-            body_directions.append('UP')
+        # Mark snake body in the game state
+        for body_part in snake_body:
+            game_state[body_part[0], body_part[1]] = -1
 
-        # Remove directions that would hit a wall
-        wall_directions = []
-        if first_seg[0] == 0:  # Leftmost column
-            wall_directions.append('LEFT')
-        if first_seg[0] == x_dim - 1:  # Rightmost column
-            wall_directions.append('RIGHT')
-        if first_seg[1] == 0:  # Top row
-            wall_directions.append('UP')
-        if first_seg[1] == y_dim - 1:  # Bottom row
-            wall_directions.append('DOWN')
+        game_state_flat = game_state.flatten()
+        direction_encoding = torch.tensor([last_head_direction], dtype=torch.float32)
+        neural_net_input = torch.cat((direction_encoding, game_state_flat), 0)
+           
+        input_size = grid_size[0] * grid_size[1] + 1
+        hidden_size = 64  # Example size, you can tune this
+        output_size = 4  # For 4 directions
 
-        valid_head_directions = ['LEFT', 'RIGHT', 'UP', 'DOWN']
-        invalid_dirs = set(wall_directions + body_directions)
-        valid_head_directions = [dir for dir in valid_head_directions if dir not in invalid_dirs]
+        snake_nn = SnakeNN(input_size, hidden_size, output_size)
+        head_direction = torch.argmax(snake_nn(neural_net_input)).item()
+        head_direction = head_direction * 90
 
-        return random.choice(valid_head_directions) if valid_head_directions else 'DOWN'
-    
+        return head_direction
+
 import pandas as pd
+
 
 class TrialRunner:
     def __init__(self, num_trials, grid_size, window_height, window_width, game_tick, run_headless):
