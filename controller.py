@@ -64,7 +64,8 @@ class GameController:
             game_record = {
                 'snake_length': snake_length,
                 'grid_size': (self.game.game_grid.x_dim, self.game.game_grid.y_dim),
-                'runtime_milliseconds': runtime_ms
+                'runtime_milliseconds': runtime_ms,
+                'num_steps': self.game.snake.step_count
             }
 
             return game_record
@@ -136,8 +137,11 @@ class TrialRunner:
             game_controller = GameController(self.grid_size, self.window_height, self.window_width, self.game_tick, self.run_headless)
             self.runs[run_number] = game_controller.play_game()
 
+    def output_table(self):
+        return pd.DataFrame.from_dict(self.runs, orient='index')
+
     def print_table(self):
-        print(pd.DataFrame.from_dict(self.runs, orient='index'))
+        print(self.output_table())
 
 
 if __name__ == '__main__':

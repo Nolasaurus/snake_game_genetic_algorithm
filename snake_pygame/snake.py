@@ -3,6 +3,7 @@ from linkedlist import LinkedList
 
 class Snake:
     def __init__(self, grid_size):
+        self.step_count = 0
         self.grid_size = grid_size
         x_mid = grid_size[0] // 2
         y_mid = grid_size[1] // 2
@@ -36,6 +37,7 @@ class Snake:
 
         next_head = (head_x, head_y)
         self.snake.insert_at_beginning(next_head)
+        self.step_count += 1
 
         # Check if the snake ate food
         snake_ate_food = next_head in game_grid_object.food
