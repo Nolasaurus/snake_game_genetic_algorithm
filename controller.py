@@ -6,12 +6,9 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from snake_pygame.user_interface import UserInterface, GameOverException  # Import the UserInterface class
+from snake_pygame.user_interface import UserInterface, GameOverException
 
-# Adjust the path if snake_pygame is in a different directory
 sys.path.append(os.path.join(os.path.dirname(__file__), 'snake_pygame'))
-
-
 
 def main():
     GAME_TICK = 3600
@@ -21,31 +18,46 @@ def main():
     RUN_HEADLESS = True
     NUM_TRIALS = 100
     
-    tester = TrialRunner(100, GRID_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH, GAME_TICK, RUN_HEADLESS)
-    tester.run_trial()
-    tester.print_table()
-
+    game = GameController(GRID_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH, GAME_TICK, RUN_HEADLESS)
+    run = game.play_game()
+    print(run)
     pygame.quit()
-
 
 class SnakeNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(SnakeNN, self).__init__()
 
         self.fc1 = nn.Linear(input_size, 64)
-        self.fc2 = nn.Linear(64, 32)
-        self.fc3 = nn.Linear(32, output_size)
+        self.fc2 = nn.Linear(64, 64)
+        self.fc3 = nn.Linear(64, 32)
+        self.fc4 = nn.Linear(32, output_size)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         x = self.fc3(x)
+        x = self.fc4(x)
         return x
+    
+    def set_weights(self, weights):
+        fc2_weights, fc3_weights = weights
+        self.fc2.weight.data = fc2_weights
+        self.fc3.weight.data = fc3_weights
+
+    def extract_weights(self):
+        fc2_weights = self.fc2.weight.data
+        fc3_weights = self.fc3.weight.data
+
+        return pd.DataFrame(fc2_weights), pd.DataFrame(fc3_weights)
 
 class GameController:
     def __init__(self, grid_size, window_height, window_width,game_tick, run_headless):
         # Instantiate the game's user interface
         self.game = UserInterface(grid_size=grid_size, window_height=window_height, window_width=window_width, game_tick=game_tick, run_headless=run_headless)
+        input_size = grid_size[0] * grid_size[1] + 1
+        output_size = 4  # For 4 directions
+        hidden_size = 64  # tune this
+        self.model = SnakeNN(input_size, hidden_size, output_size)
 
     def start_game(self):
         # Start the game loop
@@ -83,11 +95,12 @@ class GameController:
                 'snake_length': snake_length,
                 'grid_size': (self.game.game_grid.x_dim, self.game.game_grid.y_dim),
                 'runtime_milliseconds': runtime_ms,
-                'num_steps': self.game.snake.step_count
+                'num_steps': self.game.snake.step_count,
+                'fc2_weights' : self.model.fc2.weight.data,
+                'fc3_weights' : self.model.fc3.weight.data
             }
 
             return game_record
-        
 
 
     def choose_direction(self):
@@ -109,41 +122,10 @@ class GameController:
         game_state_flat = game_state.flatten()
         direction_encoding = torch.tensor([last_head_direction], dtype=torch.float32)
         neural_net_input = torch.cat((direction_encoding, game_state_flat), 0)
-           
-        input_size = grid_size[0] * grid_size[1] + 1
-        hidden_size = 64  # Example size, you can tune this
-        output_size = 4  # For 4 directions
-
-        snake_nn = SnakeNN(input_size, hidden_size, output_size)
-        head_direction = torch.argmax(snake_nn(neural_net_input)).item()
+        neural_net_input = neural_net_input.unsqueeze(0)  # Add a batch dimension
+        head_direction = torch.argmax(self.model(neural_net_input)).item()
         head_direction = head_direction * 90
-
         return head_direction
-
-import pandas as pd
-
-
-class TrialRunner:
-    def __init__(self, num_trials, grid_size, window_height, window_width, game_tick, run_headless):
-        self.num_trials = num_trials
-        self.grid_size = grid_size
-        self.window_height = window_height
-        self.window_width = window_width
-        self.game_tick = game_tick
-        self.run_headless = run_headless
-        self.runs = {}
-
-    def run_trial(self):
-        for run_number in range(self.num_trials):
-            game_controller = GameController(self.grid_size, self.window_height, self.window_width, self.game_tick, self.run_headless)
-            self.runs[run_number] = game_controller.play_game()
-
-    def output_table(self):
-        return pd.DataFrame.from_dict(self.runs, orient='index')
-
-    def print_table(self):
-        print(self.output_table())
-
 
 if __name__ == '__main__':
     main()
