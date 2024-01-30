@@ -27,10 +27,10 @@ class SnakeNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(SnakeNN, self).__init__()
 
-        self.fc1 = nn.Linear(input_size, 64)
-        self.fc2 = nn.Linear(64, 64)
-        self.fc3 = nn.Linear(64, 32)
-        self.fc4 = nn.Linear(32, output_size)
+        self.fc1 = nn.Linear(input_size, 16)
+        self.fc2 = nn.Linear(16, 16)
+        self.fc3 = nn.Linear(16, 16)
+        self.fc4 = nn.Linear(16, output_size)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
@@ -65,8 +65,8 @@ class GameController:
 
 
     def play_game(self):
+        game_start = time.time_ns()  # Start timing
         try:
-            game_start = time.time_ns()  # Start timing
             while self.game.running:
                 # Choose a new head direction at each tick
                 new_direction = self.choose_direction()
@@ -82,7 +82,7 @@ class GameController:
                     self.game.render()
 
                 self.game.clock.tick(self.game.game_tick)
-                
+
         except GameOverException:
             game_end = time.time_ns()  # End timing
             runtime = game_end - game_start
