@@ -48,7 +48,7 @@ class SnakeNN(nn.Module):
         fc2_weights = self.fc2.weight.data
         fc3_weights = self.fc3.weight.data
 
-        return pd.DataFrame(fc2_weights), pd.DataFrame(fc3_weights)
+        return fc2_weights, fc3_weights
 
 class GameController:
     def __init__(self, grid_size, window_height, window_width,game_tick, run_headless):

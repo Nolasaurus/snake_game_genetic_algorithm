@@ -10,8 +10,8 @@ WINDOW_HEIGHT = 800
 WINDOW_WIDTH = 800
 GRID_SIZE = (8, 8)
 RUN_HEADLESS = True
-NUM_TRIALS = 200
-NUM_EPOCHS = 10000
+NUM_TRIALS = 20
+NUM_EPOCHS = 100
 MUTATION_RATE = 0.2
 MUTATION_STDDEV = 0.25
 ELITE_SELECTIVITY = 0.2
@@ -67,28 +67,41 @@ class GeneticAlgorithm:
         self.curr_results = None
 
     def run_trial(self):
-        print('Epoch:', self.epoch)
-        # first run
-        if self.epoch == 0:
-            self.tester = TrialRunner(NUM_TRIALS, GRID_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH, GAME_TICK, RUN_HEADLESS)
+        self.print_epoch_info()
+        self.setup_trial_runner()
+        self.run_and_record_trial()
+        self.epoch += 1
+
+    def print_epoch_info(self):
+        if self.epoch % 10 == 0:
+            print(f'Epoch: {self.epoch}')
+
+    def setup_trial_runner(self):
+        weights = None
+        if self.epoch != 0:
+            weights = self.create_weights_for_next_trial(self.curr_results)
+
+        self.tester = TrialRunner(
+            NUM_TRIALS, GRID_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH, GAME_TICK, RUN_HEADLESS, weights
+        )
+
+    def run_and_record_trial(self):
+        try:
             self.tester.run_trial()
             self.curr_results = self.tester.output_table()
-        else:
-            weights = self.create_weights_for_next_trial(self.curr_results)
-            self.tester = TrialRunner(NUM_TRIALS, GRID_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH, GAME_TICK, RUN_HEADLESS, weights)
-            self.tester.run_trial()
+            self.record_trial_results()
+        except Exception as e:
+            print(f"Error during trial run at epoch {self.epoch}: {e}")
 
-        self.curr_results = self.tester.output_table()
-        self.trials_record[self.epoch] = {'game_record': self.curr_results,
-                                          'max_num_steps': self.curr_results['num_steps'].max(),
-                                          'max_snake_length': self.curr_results['snake_length'].max()}
-
-        print('Steps:', self.curr_results['num_steps'].max(), '\n', 'Length:', self.curr_results['snake_length'].max())
-        self.epoch += 1
+    def record_trial_results(self):
+        self.trials_record[self.epoch] = {
+            'game_record': self.curr_results,
+            'max_num_steps': self.curr_results['num_steps'].max(),
+            'max_snake_length': self.curr_results['snake_length'].max()
+        }
 
     def create_weights_for_next_trial(self, results_df):
         elite = results_df.sort_values('num_steps', ascending=False).head(int(NUM_TRIALS*ELITE_SELECTIVITY))
-        num_remaining = len(results_df) - len(elite)
         # extend weights by randomly choosing weights to duplicate
         best_fc2_weights = elite['fc2_weights'].tolist()
         best_fc3_weights = elite['fc3_weights'].tolist()
